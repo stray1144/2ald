@@ -1,5 +1,5 @@
 # Overview
-3Asm ("ARCx Assembler A sm" where the "sm" doesn't really mean anything) is a assembler for the ARCx MK.II ISA
+2ALd ("ARCx Architecture Linker d" where the "d" doesn't really mean anything) is a linker for the ARCx MK.II ISA (using the cxREO format).
 
 # Dependencies
 - libcxsh: https://github.com/stray1144/libcxsh (ARCx toolchain library)
