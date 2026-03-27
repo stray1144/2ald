@@ -2,14 +2,14 @@ CC = clang
 CFLAGS = -std=c23 -Wall -Wextra -Wpedantic
 
 LIBRARIES := -lvacant -lcxsh
-SOURCE := source/3asm.c source/log.c source/assembler.c source/atomics.c source/patterns.c source/find.c source/generator.c source/output.c
+SOURCE := source/2ald.c
 OBJECTS := $(patsubst source/%.c, build/objects/%.o, $(SOURCE))
 
 PREFIX ?= /usr
 
 BINARY_INSTALL := $(PREFIX)/bin
 
-OUTPUT := 3asm
+OUTPUT := 2ald
 
 .PHONY: run install
 
