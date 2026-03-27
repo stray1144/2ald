@@ -33,7 +33,6 @@ bool context_minimal_init(context_t *context, int argc, char **argv) {
 
 void shutdown(context_t *context, int exit_code) {
         context_minimal_clear(context);
-        context_assembler_clear(context);
         exit(exit_code);
 }
 
@@ -55,25 +54,6 @@ int main(int argc, char **argv) {
         if(parameter_probe(&context.AP, "quiet", PARAMETER_FLAG)) logger_level_change(&context.logger, LOGGER_SILENT);
         if(parameter_probe(&context.AP, "timestamp", PARAMETER_FLAG)) context.settings.logger_timestamp = true;
         context.settings.output_file = parameter_optional_get(&context.AP, "output", "output.cxo");
-
-        translation_unit_t translation_unit = {0};
-
-        char *path = parameter_positional_get(&context.AP, 1);
-
-        if(translation_unit_init(&translation_unit, path) == false) {
-                system_error(&context, "translation unit", "Couldn't init translation unit...");
-                shutdown(&context, -1);
-        }
-
-        if(translation_unit_assemble(&context, &translation_unit, path) == false) {
-                translation_unit_clear(&translation_unit);
-                shutdown(&context, -1);
-        }
-
-
-        translation_unit_write(&context, &translation_unit);
-
-        translation_unit_clear(&translation_unit);
 
         shutdown(&context, 0);
 }
