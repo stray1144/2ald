@@ -1,3 +1,6 @@
+# Alert!
+This is an unfinished research project! Expect errors and experimental design.
+
 # Overview
 2ALd ("ARCx Architecture Linker d" where the "d" doesn't really mean anything) is a linker for the ARCx MK.II ISA (using the cxREO format).
 
