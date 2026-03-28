@@ -47,20 +47,28 @@ void help(context_t *context) {
         system_error(context, "help", "not implemented");
 }
 
+void settings_handle(context_t *context) {
+        if(parameter_probe(&context->AP, "help", PARAMETER_FLAG)) {
+                help(context);
+                shutdown(context, 0);
+        }
+
+        if(parameter_probe(&context->AP, "verbose", PARAMETER_FLAG)) logger_level_change(&context->logger, LOGGER_VERBOSE);
+        if(parameter_probe(&context->AP, "debug", PARAMETER_FLAG)) logger_level_change(&context->logger, LOGGER_DEBUG);
+        if(parameter_probe(&context->AP, "quiet", PARAMETER_FLAG)) logger_level_change(&context->logger, LOGGER_SILENT);
+        if(parameter_probe(&context->AP, "timestamp", PARAMETER_FLAG)) context->settings.logger_timestamp = true;
+        context->settings.output_file = parameter_optional_get(&context->AP, "output", "output.cxo");
+}
+
+}
 int main(int argc, char **argv) {
         context_t context = {0};
         if(!context_minimal_init(&context, argc, argv)) shutdown(&context, -1);
 
-        if(parameter_probe(&context.AP, "help", PARAMETER_FLAG)) {
-                help(&context);
-                shutdown(&context, 0);
+        settings_handle(&context);
+
         }
 
-        if(parameter_probe(&context.AP, "verbose", PARAMETER_FLAG)) logger_level_change(&context.logger, LOGGER_VERBOSE);
-        if(parameter_probe(&context.AP, "debug", PARAMETER_FLAG)) logger_level_change(&context.logger, LOGGER_DEBUG);
-        if(parameter_probe(&context.AP, "quiet", PARAMETER_FLAG)) logger_level_change(&context.logger, LOGGER_SILENT);
-        if(parameter_probe(&context.AP, "timestamp", PARAMETER_FLAG)) context.settings.logger_timestamp = true;
-        context.settings.output_file = parameter_optional_get(&context.AP, "output", "output.cxo");
 
         shutdown(&context, 0);
 }
