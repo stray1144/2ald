@@ -77,6 +77,10 @@ int main(int argc, char **argv) {
                 shutdown(&context, -1);
         }
 
+        if(parameter_positional_count(&context.AP) == 0) {
+                system_error(&context, "file", "Not a single file to link...");
+                shutdown(&context, -1);
+        }
 
         shutdown(&context, 0);
 }
