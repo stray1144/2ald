@@ -5,6 +5,7 @@
 #include <libvacant/libvacant.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 
 void context_minimal_clear(context_t *context) {
         if(context == nullptr) return;
@@ -65,7 +66,25 @@ void settings_handle(context_t *context) {
         if(strcasecmp(output_format, "flat") == 0) context->settings.output_format = OUTPUT_FLAT;
 }
 
+bool file_load(context_t *context, char *path) {
+        reo_file_t file = {0};
+
+        if(reo_file_init(&file) == false) {
+                system_error(context, "cxreo", "Couldn't init cxREO file...");
+                return false;
+        }
+
+        if(reo_file_load(&file, path) == false) {
+                system_error(context, "cxreo", "Couldn't load %s...", path);
+                reo_file_clear(&file);
+                return false;
+        }
+
+        buffer_append(&context->file_list, &file, 1);
+
+        return true;
 }
+
 int main(int argc, char **argv) {
         context_t context = {0};
         if(!context_minimal_init(&context, argc, argv)) shutdown(&context, -1);
@@ -80,6 +99,12 @@ int main(int argc, char **argv) {
         if(parameter_positional_count(&context.AP) == 0) {
                 system_error(&context, "file", "Not a single file to link...");
                 shutdown(&context, -1);
+        }
+
+        for(uint32_t i = 1; i <= parameter_positional_count(&context.AP); i++) {
+                char *path = parameter_positional_get(&context.AP, i);
+
+                if(file_load(&context, path) == false) shutdown(&context, -1);
         }
 
         shutdown(&context, 0);
