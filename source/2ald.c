@@ -58,6 +58,11 @@ void settings_handle(context_t *context) {
         if(parameter_probe(&context->AP, "quiet", PARAMETER_FLAG)) logger_level_change(&context->logger, LOGGER_SILENT);
         if(parameter_probe(&context->AP, "timestamp", PARAMETER_FLAG)) context->settings.logger_timestamp = true;
         context->settings.output_file = parameter_optional_get(&context->AP, "output", "output.cxo");
+
+        char *output_format = parameter_optional_get(&context->AP, "format", "cxreo");
+        context->settings.output_format = OUTPUT_UNKNOWN;
+        if(strcasecmp(output_format, "cxreo") == 0) context->settings.output_format = OUTPUT_CXREO;
+        if(strcasecmp(output_format, "flat") == 0) context->settings.output_format = OUTPUT_FLAT;
 }
 
 }
@@ -67,6 +72,9 @@ int main(int argc, char **argv) {
 
         settings_handle(&context);
 
+        if(context.settings.output_format == OUTPUT_UNKNOWN) {
+                system_error(&context, "arguments", "Unknown output format");
+                shutdown(&context, -1);
         }
 
 

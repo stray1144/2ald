@@ -10,8 +10,16 @@
 
 #include <sys/types.h>
 
+typedef enum output_format_kind_e {
+        OUTPUT_UNKNOWN,
+        OUTPUT_CXREO,
+        OUTPUT_FLAT
+} output_format_kind_t;
+
 typedef struct settings_s {
         char *output_file;
+        output_format_kind_t output_format;
+        // char *output_format; // "cxreo" or "flat"
 
         bool logger_timestamp;
 } settings_t;
