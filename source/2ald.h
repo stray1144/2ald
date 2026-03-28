@@ -21,6 +21,8 @@ typedef struct context_s {
         argument_parser_t AP;
         
         settings_t settings;
+
+        buffer_t file_list;
 } context_t;
 
 // typedef struct translation_unit_s {

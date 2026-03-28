@@ -11,6 +11,8 @@ void context_minimal_clear(context_t *context) {
 
         logger_clear(&context->logger);
         argument_parser_clear(&context->AP);
+        for(size_t i = 0; i < context->file_list.used; i++) reo_file_clear(buffer_get(&context->file_list, i));
+        buffer_clear(&context->file_list);
 }
 
 bool context_minimal_init(context_t *context, int argc, char **argv) {
@@ -25,6 +27,11 @@ bool context_minimal_init(context_t *context, int argc, char **argv) {
 
         if(argument_parser_init(&context->AP, argc, argv) == false) {
                 system_fatal(context, "parameters", "Couldn't init the argument parser...");
+                return false;
+        }
+
+        if(buffer_init(&context->file_list, sizeof(reo_file_t)) == false) {
+                system_fatal(context, "file", "Couldn't init the file list...");
                 return false;
         }
 
