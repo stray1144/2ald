@@ -24,6 +24,17 @@ typedef struct settings_s {
         bool logger_timestamp;
 } settings_t;
 
+typedef struct merger_s {
+        buffer_t file_list;
+        reo_size_t old_sizes[REO_SECTION_COUNT];
+} merger_t;
+
+void merger_clear(merger_t *merger);
+bool merger_init(merger_t *merger);
+
+bool merger_upload(merger_t *merger, const char *path);
+bool merge(merger_t *merger, reo_file_t *product);
+
 typedef struct context_s {
         logger_t logger;
         argument_parser_t AP;
@@ -31,6 +42,7 @@ typedef struct context_s {
         settings_t settings;
 
         buffer_t file_list;
+        merger_t merger;
 } context_t;
 
 // typedef struct translation_unit_s {
