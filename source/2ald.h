@@ -35,14 +35,48 @@ bool merger_init(merger_t *merger);
 bool merger_upload(merger_t *merger, const char *path);
 bool merge(merger_t *merger, reo_file_t *product);
 
+typedef uint64_t arcx_address_t;
+
+typedef enum symbol_type_e {
+        SYMBOL_UNKNOWN,
+        SYMBOL_NORMAL,
+        SYMBOL_IMPORT,
+        SYMBOL_EMBED
+} symbol_type_t;
+
+typedef struct symbol_s {
+        symbol_type_t type;
+        uint32_t source_index;
+        char *name;
+        arcx_address_t position;
+} symbol_t;
+
+typedef struct representation_s {
+        char *name;
+
+        reo_size_t string_size;
+        reo_size_t code_size;
+        reo_size_t data_size;
+        reo_size_t block_size;
+
+        uint8_t *string;
+        uint8_t *code;
+        uint8_t *data;
+} representation_t;
+
+typedef struct archiver_s {
+        buffer_t file_content; // buffer_t<reo_file_t>
+        buffer_t representations; // buffer_t<representation_t>
+        buffer_t symbol_table; // buffer_t<symbol_t>
+} archiver_t;
+
 typedef struct context_s {
         logger_t logger;
         argument_parser_t AP;
         
         settings_t settings;
-
-        buffer_t file_list;
-        merger_t merger;
+        
+        archiver_t archiver;
 } context_t;
 
 // typedef struct translation_unit_s {
