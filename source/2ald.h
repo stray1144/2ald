@@ -94,6 +94,9 @@ void archiver_clear(archiver_t *archiver);
 
 bool archiver_load(archiver_t *archiver, const char *path);
 
+bool formatter_cxreo_format(archiver_t *archiver, reo_file_t *output);
+bool formatter_flat_format(archiver_t *archiver, buffer_t *output);
+
 typedef struct context_s {
         logger_t logger;
         argument_parser_t AP;
