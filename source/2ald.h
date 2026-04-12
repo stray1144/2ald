@@ -27,10 +27,21 @@ typedef uint64_t arcx_address_t;
 
 typedef enum symbol_type_e {
         SYMBOL_UNKNOWN,
-        SYMBOL_NORMAL,
+        SYMBOL_CODE,
+        SYMBOL_DATA,
+        SYMBOL_BLOCK,
         SYMBOL_IMPORT,
         SYMBOL_EMBED
 } symbol_type_t;
+
+static char *symbol_type_names[] = {
+        "unknown",
+        "code",
+        "data",
+        "block",
+        "import",
+        "embed"
+};
 
 typedef struct symbol_s {
         symbol_type_t type;
@@ -39,8 +50,27 @@ typedef struct symbol_s {
         arcx_address_t position;
 } symbol_t;
 
-typedef struct representation_s {
+typedef enum relocation_type_e {
+        RELOCATION_UNKNOWN,
+        RELOCATION_ABSOLUTE,
+        RELOCATION_RIP_RELATIVE,
+} relocation_type_t;
+
+static char *relocation_type_names[] = {
+        "unknown",
+        "absolute",
+        "rip-relative",
+};
+
+typedef struct relocation_s {
+        relocation_type_t type;
+        uint32_t source_index;
         char *name;
+        arcx_address_t position;
+} relocation_t;
+
+typedef struct representation_s {
+        const char *name;
 
         reo_size_t string_size;
         reo_size_t code_size;
@@ -53,10 +83,16 @@ typedef struct representation_s {
 } representation_t;
 
 typedef struct archiver_s {
-        buffer_t file_content; // buffer_t<reo_file_t>
+        buffer_t files; // buffer_t<reo_file_t>
         buffer_t representations; // buffer_t<representation_t>
         buffer_t symbol_table; // buffer_t<symbol_t>
+        buffer_t relocation_table; // buffer_t<relocation_t>
 } archiver_t;
+
+bool archiver_init(archiver_t *archiver);
+void archiver_clear(archiver_t *archiver);
+
+bool archiver_load(archiver_t *archiver, const char *path);
 
 typedef struct context_s {
         logger_t logger;
@@ -65,6 +101,7 @@ typedef struct context_s {
         settings_t settings;
         
         archiver_t archiver;
+        // formatter_t formatter;
 } context_t;
 
 #define SYSTEM_LOGGER(name) system_##name(context_t *context, char *prefix, char *format, ...)
