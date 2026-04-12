@@ -88,5 +88,20 @@ int main(int argc, char **argv) {
                 if(archiver_load(&context.archiver, path) == false) shutdown(&context, -1);
         }
 
+        if(context.settings.output_format == OUTPUT_CXREO) {
+                reo_file_t output = {0};
+                reo_file_init(&output);
+                formatter_cxreo_format(&context.archiver, &output);
+                reo_file_save(&output, context.settings.output_file);
+                reo_file_clear(&output);
+        }
+        else if(context.settings.output_format == OUTPUT_FLAT) {
+                buffer_t output = {0};
+                buffer_init(&output, sizeof(uint8_t));
+                formatter_flat_format(&context.archiver, &output);
+
+                buffer_clear(&output);
+        }
+
         shutdown(&context, 0);
 }
