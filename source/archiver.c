@@ -63,8 +63,6 @@ void archiver_symbol_extract(archiver_t *archiver, uint32_t source_index, reo_sy
         symbol.position = entry->location;
 
         buffer_append(&archiver->symbol_table, &symbol, 1);
-
-        printf("symbol %s in source[%d] at %s(0x%.16lX)\n", symbol.name, symbol.source_index, symbol_type_names[symbol.type], symbol.position);
 }
 
 void archiver_relocation_extract(archiver_t *archiver, uint32_t source_index, reo_relocation_t *entry) {
@@ -83,8 +81,6 @@ void archiver_relocation_extract(archiver_t *archiver, uint32_t source_index, re
         relocation.position = entry->patch_location;
 
         buffer_append(&archiver->relocation_table, &relocation, 1);
-
-        printf("%s %s relocation in source[%d] at code(0x%.16lX)\n", relocation.name, relocation_type_names[relocation.type], relocation.source_index, relocation.position);
 }
 
 bool archiver_load(archiver_t *archiver, const char *path) {
