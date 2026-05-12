@@ -16,14 +16,17 @@ typedef enum output_format_kind_e {
         OUTPUT_FLAT
 } output_format_kind_t;
 
+typedef uint64_t arcx_address_t;
+
 typedef struct settings_s {
-        char *output_file;
+        const char *output_file;
         output_format_kind_t output_format;
 
         bool logger_timestamp;
-} settings_t;
 
-typedef uint64_t arcx_address_t;
+        const char *entry;
+        arcx_address_t origin;
+} settings_t;
 
 typedef enum symbol_type_e {
         SYMBOL_UNKNOWN,
@@ -45,46 +48,20 @@ static char *symbol_type_names[] = {
 
 typedef struct symbol_s {
         symbol_type_t type;
-        uint32_t source_index;
-        char *name;
-        arcx_address_t position;
+        reo_size_t size;
+        const char *name;
+        arcx_address_t location; // filled by formatter
+        void *data;
 } symbol_t;
 
-typedef enum relocation_type_e {
-        RELOCATION_UNKNOWN,
-        RELOCATION_ABSOLUTE,
-        RELOCATION_RIP_RELATIVE,
-} relocation_type_t;
-
-static char *relocation_type_names[] = {
-        "unknown",
-        "absolute",
-        "rip-relative",
-};
-
 typedef struct relocation_s {
-        relocation_type_t type;
-        uint32_t source_index;
-        char *name;
-        arcx_address_t position;
+        const char *patch;
+        const char *target;
+        reo_offset_t addend;
 } relocation_t;
-
-typedef struct representation_s {
-        const char *name;
-
-        reo_size_t string_size;
-        reo_size_t code_size;
-        reo_size_t data_size;
-        reo_size_t block_size;
-
-        uint8_t *string;
-        uint8_t *code;
-        uint8_t *data;
-} representation_t;
 
 typedef struct archiver_s {
         buffer_t files; // buffer_t<reo_file_t>
-        buffer_t representations; // buffer_t<representation_t>
         buffer_t symbol_table; // buffer_t<symbol_t>
         buffer_t relocation_table; // buffer_t<relocation_t>
 } archiver_t;
@@ -94,8 +71,24 @@ void archiver_clear(archiver_t *archiver);
 
 bool archiver_load(archiver_t *archiver, const char *path);
 
-bool formatter_cxreo_format(archiver_t *archiver, reo_file_t *output);
-bool formatter_flat_format(archiver_t *archiver, buffer_t *output);
+symbol_t *archiver_symbol_search(archiver_t *archiver, const char *name);
+
+typedef enum formatter_status_e {
+        FORMATTER_OK,
+        FORMATTER_MISSING_SYMBOL,
+        FORMATTER_BAD_SIZE,
+        FORMATTER_BAD_ADDEND
+} formatter_status_t;
+
+typedef struct formatter_result_s {
+        formatter_status_t status;
+        union {
+                const char *string;
+        };
+} formatter_result_t;
+
+formatter_result_t formatter_cxreo_format(archiver_t *archiver, settings_t *settings, reo_file_t *output);
+formatter_result_t formatter_flat_format(archiver_t *archiver, settings_t *settings, buffer_t *output);
 
 typedef struct context_s {
         logger_t logger;
@@ -115,10 +108,5 @@ void SYSTEM_LOGGER(warn); // system_warn()
 void SYSTEM_LOGGER(info); // system_info()
 void SYSTEM_LOGGER(verbose); // system_verbose()
 void SYSTEM_LOGGER(debug); // system_debug()
-
-typedef struct encoded_descriptor_s {
-	uint8_t register_id : 6;
-	uint8_t size : 2;
-} encoded_descriptor_t;
 
 #endif

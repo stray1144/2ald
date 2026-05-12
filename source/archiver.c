@@ -1,5 +1,7 @@
 #include "2ald.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 bool archiver_init(archiver_t *archiver) {
         if(archiver == nullptr) return false;
@@ -9,7 +11,6 @@ bool archiver_init(archiver_t *archiver) {
         bool result = true;
 
         result &= buffer_init(&archiver->files, sizeof(reo_file_t));
-        result &= buffer_init(&archiver->representations, sizeof(representation_t));
         result &= buffer_init(&archiver->symbol_table, sizeof(symbol_t));
         result &= buffer_init(&archiver->relocation_table, sizeof(relocation_t));
 
@@ -25,60 +26,53 @@ void archiver_clear(archiver_t *archiver) {
         }
 
         buffer_clear(&archiver->files);
-        buffer_clear(&archiver->representations);
         buffer_clear(&archiver->symbol_table);
         buffer_clear(&archiver->relocation_table);
 }
 
-representation_t archiver_representation_generate(reo_file_t *file, const char *name) {
-        representation_t representation = {0};
+void *archiver_symbol_data(reo_file_t *file, reo_symbol_t *symbol) {
+        void *lut[4] = {nullptr, (void *)(reo_code_get(file) + symbol->location), reo_data_get(file, symbol->location), nullptr};
 
-        representation.name = name;
-
-        representation.string_size = file->header.sizes[REO_STRING_SECTION]; 
-        representation.code_size = file->header.sizes[REO_CODE_SECTION]; 
-        representation.data_size = file->header.sizes[REO_DATA_SECTION]; 
-        representation.block_size = file->header.sizes[REO_BLOCK_SECTION]; 
-
-        representation.string = buffer_get(&file->strings, 0);
-        representation.code = buffer_get(&file->code, 0);
-        representation.data = buffer_get(&file->data, 0);
-
-        return representation;
+        return lut[symbol->type.location];
 }
 
-void archiver_symbol_extract(archiver_t *archiver, uint32_t source_index, reo_symbol_t *entry) {
-        reo_file_t *file = buffer_get(&archiver->files, source_index);
+symbol_t *archiver_symbol_search(archiver_t *archiver, const char *name) {
+        if(name == nullptr) return nullptr;
+
+        for(size_t i = 0; i < archiver->symbol_table.used; i++) {
+                symbol_t *symbol = buffer_get(&archiver->symbol_table, i);
+                if(strcmp(symbol->name, name) == 0) return symbol;
+        }
+
+        return nullptr;
+}
+
+void archiver_symbol_extract(archiver_t *archiver, reo_file_t *file, reo_symbol_t *entry) {
         reo_file_type_t type = reo_type_get(file);
 
         if(entry->entry.type != REO_ENTRY_SYMBOL) return; 
 
-        representation_t *representation = buffer_get(&archiver->representations, source_index);
-
         symbol_t symbol = {0};
 
         symbol.type = (type == REO_TYPE_SHARED) ? SYMBOL_IMPORT : entry->type.location; 
-        symbol.source_index = source_index;
-        symbol.name = (char *) representation->string + entry->entry.name_string;
-        symbol.position = entry->location;
+        symbol.size = entry->symbol_size;
+        symbol.name = reo_string_get(file, entry->entry.name_string);
+        if(symbol.type != SYMBOL_BLOCK) {
+                symbol.data = calloc(1, entry->symbol_size);
+                memcpy(symbol.data, archiver_symbol_data(file, entry), entry->symbol_size);
+        }
 
         buffer_append(&archiver->symbol_table, &symbol, 1);
 }
 
-void archiver_relocation_extract(archiver_t *archiver, uint32_t source_index, reo_relocation_t *entry) {
+void archiver_relocation_extract(archiver_t *archiver, reo_file_t *file, reo_relocation_t *entry) {
         if(entry->entry.type != REO_ENTRY_RELOCATION) return; 
-
-        representation_t *representation = buffer_get(&archiver->representations, source_index);
 
         relocation_t relocation = {0};
 
-        // REO_RELOCATION_ABSOLUTE (0) -> RELOCATION_ABSOLUTE (1)
-        // REO_RELOCATION_PC_RELATIVE (1) -> RELOCATION_RIP_RELATIVE (2) 
-        // TODO: make prettier code for this 
-        relocation.type = entry->type + 1;
-        relocation.source_index = source_index;
-        relocation.name = (char *) representation->string + entry->entry.name_string;
-        relocation.position = entry->patch_location;
+        relocation.patch = reo_string_get(file, entry->entry.name_string);
+        relocation.target = reo_string_get(file, entry->target_name);
+        relocation.addend = entry->addend;
 
         buffer_append(&archiver->relocation_table, &relocation, 1);
 }
@@ -99,18 +93,13 @@ bool archiver_load(archiver_t *archiver, const char *path) {
                 return false;
         }
 
-        representation_t representation = archiver_representation_generate(&file, path);
-
-        uint32_t source_index = archiver->files.used;
-
         buffer_append(&archiver->files, &file, 1);
-        buffer_append(&archiver->representations, &representation, 1);
 
         for(size_t i = 0; i < reo_entry_count(&file); i++) {
                 reo_entry_t *entry = reo_entry_get(&file, i);
 
-                archiver_symbol_extract(archiver, source_index, (void *)entry);
-                archiver_relocation_extract(archiver, source_index, (void *)entry);
+                archiver_symbol_extract(archiver, &file, (void *)entry);
+                archiver_relocation_extract(archiver, &file, (void *)entry);
         }
 
         return true;

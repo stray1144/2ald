@@ -58,13 +58,26 @@ void settings_handle(context_t *context) {
         if(parameter_probe(&context->AP, "debug", PARAMETER_FLAG)) logger_level_change(&context->logger, LOGGER_DEBUG);
         if(parameter_probe(&context->AP, "quiet", PARAMETER_FLAG)) logger_level_change(&context->logger, LOGGER_SILENT);
         if(parameter_probe(&context->AP, "timestamp", PARAMETER_FLAG)) context->settings.logger_timestamp = true;
-        context->settings.output_file = parameter_optional_get(&context->AP, "output", "output.cxo");
 
-        char *output_format = parameter_optional_get(&context->AP, "format", "cxreo");
+        const char *output_format = parameter_optional_get(&context->AP, "format", "cxreo");
         context->settings.output_format = OUTPUT_UNKNOWN;
         if(strcasecmp(output_format, "cxreo") == 0) context->settings.output_format = OUTPUT_CXREO;
         if(strcasecmp(output_format, "flat") == 0) context->settings.output_format = OUTPUT_FLAT;
+
+        context->settings.output_file = parameter_optional_get(&context->AP, "output", (context->settings.output_format == OUTPUT_CXREO) ? "output.cxo" : "output.bin");
+
+        context->settings.entry = parameter_optional_get(&context->AP, "entry", "__entry");
+
+        const char *origin = parameter_optional_get(&context->AP, "origin", "0x00");
+        char *residue = nullptr;
+        context->settings.origin = strtoull(origin, &residue, 16);
+        if(*residue != '\0') {
+                system_error(context, "arguments", "Expected a valid hexadecimal number in --origin");
+                shutdown(context, -1);
+        }
 }
+
+void __archiver_debug(archiver_t *archiver);
 
 int main(int argc, char **argv) {
         context_t context = {0};
@@ -91,14 +104,18 @@ int main(int argc, char **argv) {
         if(context.settings.output_format == OUTPUT_CXREO) {
                 reo_file_t output = {0};
                 reo_file_init(&output);
-                formatter_cxreo_format(&context.archiver, &output);
+                formatter_cxreo_format(&context.archiver, &context.settings, &output);
                 reo_file_save(&output, context.settings.output_file);
                 reo_file_clear(&output);
         }
         else if(context.settings.output_format == OUTPUT_FLAT) {
                 buffer_t output = {0};
                 buffer_init(&output, sizeof(uint8_t));
-                formatter_flat_format(&context.archiver, &output);
+                formatter_flat_format(&context.archiver, &context.settings, &output);
+        
+                FILE *file = fopen(context.settings.output_file, "wb");
+                fwrite(output.data, 1, output.used, file);
+                fclose(file);
 
                 buffer_clear(&output);
         }
